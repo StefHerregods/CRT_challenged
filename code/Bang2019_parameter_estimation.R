@@ -45,25 +45,27 @@ df_recoded <- df %>%
 # Removing outliers as described in Chen & Rahnev (2023): 
 # more than 3 SD of deviation from the mean
 
-df_obs <- df_recoded%>%
-  group_by(sub, manipulation)%>%
+df_obs <- df_recoded %>%
+  group_by(sub, manipulation) %>%
   filter((rt < mean(rt) + 3 * sd(rt) & rt > mean(rt) - 3 * sd(rt)) & (rtconf < mean(rtconf) + 3 * sd(rtconf) & rtconf > mean(rtconf) - 3 * sd(rtconf))
   )
 cat("Trials removed: ", nrow(df_recoded) - nrow(df_obs), ' (', round((nrow(df_recoded) - nrow(df_obs))/nrow(df_recoded),3), '%)', sep = "")
 
 # Add max frequency cj categories for later analyses
 
-df_preprocessed = df_obs%>%
-  group_by(sub, manipulation, cj)%>%
-  mutate(count = n())%>%
-  ungroup()%>%
-  group_by(sub, manipulation)%>%
+df_preprocessed = df_obs %>%
+  group_by(sub, manipulation, cj) %>%
+  mutate(count = n(),
+         experiment = manipulation) %>%
+  ungroup() %>%
+  group_by(sub, manipulation) %>%
   mutate(max_count = max(count),
          flag = as.numeric(count == max_count),
-         freq_conf = case_when(flag == 0 ~ 0,
+         cj_category = case_when(flag == 0 ~ 0,
                                flag == 1 ~ as.double(cj)),
-         freq_conf = max(freq_conf))%>%
-  ungroup()
+         cj_category = max(cj_category)) %>%
+  ungroup() %>%
+  select(-flag, -max_count, -manipulation)
 write.csv(df_preprocessed, "data/observations/data_Bang_2019_Exp2_preprocessed.csv", row.names = F)
 
 # Function to compute cost
@@ -390,18 +392,19 @@ for(i in 1:N_subs){  # For each participant separately
 
 # Combine estimated parameters
 
-df_params <- data.frame(matrix(ncol = 12, nrow = N_subs*length(experiment_labels)))
-colnames(df_params) <- c('sub', 'experiment', 'v', 'a', 'a_slope', 'ter', 'a2', 'starting_point_confidence', 'postdriftmod', 'a2_slope_upper', 'a2_slope_lower', 'ter2')
+df_params <- data.frame(matrix(ncol = 13, nrow = N_subs*length(experiment_labels)))
+df_temp <- aggregate(cj_category ~ sub + experiment, data = df_preprocessed, FUN = mean)
+colnames(df_params) <- c('sub', 'experiment', 'cj_category', 'v', 'a', 'a_slope', 'ter', 'a2', 'starting_point_confidence', 'postdriftmod', 'a2_slope_upper', 'a2_slope_lower', 'ter2')
 row <- 1
 for (i in (1:N_subs)){ 
   for(c in 1:N_experiments){
     file_name <- paste0('data/model_parameters/Bang2019/Bang2019_results_sub_', subs[i], '_experiment', experiment_labels[c], '.Rdata')
     load(file_name)
-    df_params[row,] <- c(subs[i], experiment_labels[c], results$optim$bestmem[1], results$optim$bestmem[2], results$optim$bestmem[3], results$optim$bestmem[4], results$optim$bestmem[5], results$optim$bestmem[6], results$optim$bestmem[7], results$optim$bestmem[8], results$optim$bestmem[9], results$optim$bestmem[10])
+    df_params[row,] <- c(subs[i], experiment_labels[c], df_temp$cj_category[df_temp$sub == subs[i] & df_temp$experiment == experiment_labels[c]], results$optim$bestmem[1], results$optim$bestmem[2], results$optim$bestmem[3], results$optim$bestmem[4], results$optim$bestmem[5], results$optim$bestmem[6], results$optim$bestmem[7], results$optim$bestmem[8], results$optim$bestmem[9], results$optim$bestmem[10])
     row <- row + 1
   }
 }
-df_params[3:12] <- lapply(df_params[3:12], as.numeric)
+df_params[3:13] <- lapply(df_params[3:13], as.numeric)
 write.csv(df_params, file = 'data/model_parameters/Bang2019/Bang2019_params.csv', row.names = F)
 
 # Make predictions for every set of estimated model parameters
@@ -410,7 +413,6 @@ if(make_predictions == TRUE){
   pb = txtProgressBar(min = 0, max = nrow(df_params), initial = 0, style = 3) 
   df_predictions <- NULL
   for (set in 1:nrow(df_params)){
-    print(set)
     df_predictions_temp <- data.frame(rep(df_params[set,1], each = n_predictions),
                                       rep(df_params[set,2], each = n_predictions),
                                       DDM_confidence_bounds(v = df_params[set,]$v,
@@ -429,9 +431,10 @@ if(make_predictions == TRUE){
                                                             z = z))
     names(df_predictions_temp) <- c('sub', 'experiment', 'rt', 'cor', 'rtconf', 'cj')
     df_predictions <- rbind(df_predictions, df_predictions_temp)
-    setTxtProgressBar(pb, i)
+    setTxtProgressBar(pb, set)
   }
 }
+df_predictions <- merge(df_predictions, df_temp, by = c('sub', 'experiment'))
 write.csv(df_predictions, file = 'data/model_predictions/Bang2019_predictions.csv', row.names = F)
 
 

@@ -12,13 +12,13 @@ library(extrafont)
 # Settings
 font_size = 12
 
-# Separate dataset analyses ----------------------------------------------------
+# Experimental datasets analyses ----------------------------------------------------
 
 # Choose a dataset to analyse
 # [1] Bang et al. (2019) 
 # [2] Haddara & Rahnev (2022) - Experiment 1
 # [3] Haddara & Rahnev (2022) - Experiment 2
-dataset <- 2
+dataset <- 3
 
 # Load data
 if (dataset == 1){
@@ -50,21 +50,82 @@ for (id in unique(df_obs$id)){
 }
 correlations_cj <- data.frame(correlations_cj)
 names(correlations_cj) <- c('observed_correlations', 'predicted_correlations')
-plot_cj_corr <- ggplot(data = correlations_cj, aes(x = observed_correlations, y = predicted_correlations)) +
-  geom_point(shape = 16, size = 2, alpha = 0.3, color = '#145369') +
+
+
+
+
+
+library(extrafont)
+#font_import()
+loadfonts(device = "win")
+
+figure_font <- 'Helvetica'
+
+theme_set(
+  theme_bw(base_size = 12) +
+    theme(
+      axis.title = element_text(family = figure_font),       
+      axis.text = element_text(size = 10, family = figure_font),   # Set axis text size to 10
+      legend.title = element_text(size = 12, family = figure_font),    
+      legend.text = element_text(size = 12, family = figure_font),
+      legend.background = element_blank(),
+      axis.line = element_line(),
+      axis.title.y = ggtext::element_markdown(),
+      axis.title.x = ggtext::element_markdown(),
+      plot.title = element_text(size = 12, family = figure_font, hjust = 0.5))
+)
+
+
+p1 <- ggplot(data = correlations_cj, aes(x = observed_correlations, y = predicted_correlations)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
   xlim(-1,1) +
   ylim(-1,1) +
   xlab('Observed correlation (*r*)') +
   ylab('Simulated correlation (*r*)') + 
-  theme_classic() +
-  geom_abline(slope = 1, size = 0.7) +
+  geom_abline(slope = 1, size = 0.5) +
   geom_abline(intercept = 0, slope = 0, color = 'darkred', size = 0.7, lty = 2) +
-  theme(text=element_text(family="sans", size=font_size),
-        axis.title.y = ggtext::element_markdown(),
-        axis.title.x = ggtext::element_markdown(),
-        axis.line = element_line(size = 0.7))
+  annotate("text", x = 1, y = -0.9, 
+           label = bquote(italic(r) == 0.67 ~ "," ~ italic(p) < 0.05), 
+           family = figure_font, hjust = 1)
+p1_title <- p1 + ggtitle('Bang')
 
-ggsave(filename = 'p2.png', plot = plot_cj_corr, dpi = 500)
+p2 <- ggplot(data = correlations_cj, aes(x = observed_correlations, y = predicted_correlations)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlim(-1,1) +
+  ylim(-1,1) +
+  xlab('Observed correlation (*r*)') +
+  ylab('Simulated correlation (*r*)') + 
+  geom_abline(slope = 1, size = 0.5) +
+  geom_abline(intercept = 0, slope = 0, color = 'darkred', size = 0.7, lty = 2) +
+  annotate("text", x = 1, y = -0.9, 
+           label = bquote(italic(r) == 0.72 ~ "," ~ italic(p) < 0.05), 
+           family = figure_font, hjust = 1)
+p2_title <- p2 + ggtitle('Haddara1')
+
+p3 <- ggplot(data = correlations_cj, aes(x = observed_correlations, y = predicted_correlations)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlim(-1,1) +
+  ylim(-1,1) +
+  xlab('Observed correlation (*r*)') +
+  ylab('Simulated correlation (*r*)') + 
+  geom_abline(slope = 1, size = 0.5) +
+  geom_abline(intercept = 0, slope = 0, color = 'darkred', size = 0.7, lty = 2) +
+  annotate("text", x = 1, y = -0.9, 
+           label = bquote(italic(r) == 0.74 ~ "," ~ italic(p) < 0.05), 
+           family = figure_font, hjust = 1)
+p3_title <- p3 + ggtitle('Haddara2')
+
+
+figure2 <- ggarrange(p1_title, p2_title, p3_title, labels = c('A', 'B', 'C'), font.label = list(size = 12, family = figure_font))
+
+
+
+
+ggsave(filename = 'figure2.png', plot = figure2, dpi = 1000, width = 6, height = 6)
+
+
+
+
 
 
 
@@ -171,26 +232,240 @@ df_merged <- rbind(cRT_cj_categorized_pred, cRT_cj_categorized_obs)
 color_scheme <- c("Observed" = "black", "Simulated" = "red")
 
 
-ggplot(data = df_merged, aes(x = cj, y = mean, color = source)) +
+p3 <- ggplot(data = df_merged, aes(x = cj, y = mean, color = source)) +
   facet_grid(. ~ cj_category) +
   geom_point(size = 2) +
-  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0, size = 0.6)+
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0, size = 0.6) +
   geom_line(size = 1) +
-  geom_text(aes(x = 2.5, y = 870, label = paste('N = ', count, sep = '')), size = 4, fontface = 'bold') +
+  geom_text(aes(x = 2.5, y = 870, label = paste('N = ', count, sep = '')), size = 3.5, family = "Helvetica", fontface = 'plain') +  # Explicitly set family here
   scale_y_continuous(limits = c(50, 1100)) +
   labs(y = 'cRT (ms)', x = 'Confidence') +
   scale_color_manual(values = color_scheme) +
-  theme(text = element_text(size = font_size),
-        plot.title = element_text(size = rel(1), hjust = 0.5),
-        axis.text = element_text(color = 'black'),
-        axis.ticks = element_line(color = 'black'),
-        panel.spacing.x = unit(10, 'pt'),
-        panel.background = element_rect(color = 'white', fill = 'white'),
-        axis.line = element_line(colour = 'black', size = 1),
-        strip.background = element_rect(color = 'white', fill = 'white'),
-        strip.text = element_text(color = 'black', size = 14),
-        legend.position = 'none'
+  theme(
+    text = element_text(size = 12, family = "Helvetica"),
+    plot.title = element_text(size = 12, hjust = 0.5, family = "Helvetica"),
+    axis.text = element_text(color = 'black', size = 10, family = "Helvetica"),
+    axis.ticks = element_line(color = 'black'),
+    panel.spacing.x = unit(10, 'pt'),
+    strip.background = element_rect(color = 'black', fill = 'white'),
+    strip.text = element_text(color = 'black', size = 12, family = "Helvetica"),
+    legend.position = 'none'
   )
 
-ggsave('Bang_rtconf.png', device = 'png', units = 'cm', width = 10, height = 5)
+plot <- ggarrange(p1, p2, p3, ncol = 2, nrow = 2)
+
+ggsave('rtconf.png', device = 'png', units = 'in', width = 7.5, height = 3.5, dpi = 1000)
+
+
+# Parameter recovery analysis --------------------------------------------------
+
+
+# Load data sets
+params_pred <- read.csv("data/model_parameters/model_recovery/model_recovery_separateTer2_params.csv")
+params_obs <- read.csv("data/model_parameters/model_recovery/parameters_recovery.csv")
+
+# merge data sets
+names(params_pred) <- paste0(names(params_pred), "_pred")
+names(params_obs) <- paste0(names(params_obs), "_obs")
+df <- cbind(params_pred, params_obs)
+
+
+
+
+
+
+plot(params_pred$a, params_obs$a)
+plot(params_pred$v, params_obs$v)
+plot(params_pred$ter, params_obs$ter)
+plot(params_pred$a2, params_obs$a2, xlab="", ylab="")
+title(main = 'a2')
+cor(params_pred$a2, params_obs$a2)
+
+plot(params_pred$a2_slope_upper, params_obs$a2_slope_upper, xlab="", ylab="")
+title(main = 'a2_slope_upper')
+
+cor(params_pred$a2_slope_upper, params_obs$a2_slope_upper)
+
+plot(params_pred$a2_slope_lower, params_obs$a2_slope_lower, xlab="", ylab="")
+title(main = 'a2_slope_lower')
+
+cor(params_pred$a2_slope_lower, params_obs$a2_slope_lower)
+
+plot(params_pred$postdriftmod, params_obs$postdriftmod, xlab="", ylab="")
+cor(params_pred$postdriftmod, params_obs$postdriftmod)
+
+title(main = 'vratio')
+
+plot(params_pred$ter2_1, params_obs$ter2_1)
+title(main = 'ter_1')
+
+plot(params_pred$ter2_2, params_obs$ter2_2)
+title(main = 'ter_2')
+
+plot(params_pred$ter2_3, params_obs$ter2_3)
+title(main = 'ter_3')
+
+plot(params_pred$ter2_4, params_obs$ter2_4)
+title(main = 'ter_4')
+
+par(mfrow=c(2,2))
+
+names(params_pred)
+names(params_obs)
+
+
+cor(params_pred$ter2_4, params_obs$ter2_4)
+
+
+
+
+
+
+
+cor(df$a_obs, df$a_pred)
+cor(df$v_obs, df$v_pred)
+cor(df$postdriftmod_obs, df$postdriftmod_pred)
+cor(df$ter_obs, df$ter_pred)
+cor(df$starting_point_confidence_obs, df$starting_point_confidence_pred)
+cor(df$a2_obs, df$a2_pred)
+cor(df$a2_slope_upper_obs, df$a2_slope_upper_pred)
+cor(df$a2_slope_lower_obs, df$a2_slope_lower_pred)
+cor(df$ter2_1_obs, df$ter2_1_pred)
+cor(df$ter2_2_obs, df$ter2_2_pred)
+cor(df$ter2_3_obs, df$ter2_3_pred)
+cor(df$ter2_4_obs, df$ter2_4_pred)
+
+
+
+theme_set(
+  theme_bw(base_size = 11) +
+    theme(
+      axis.title = element_text(family = figure_font),       
+      axis.text = element_text(size = 10, family = figure_font),   # Set axis text size to 10
+      legend.title = element_text(size = 10, family = figure_font),    
+      legend.text = element_text(size = 10, family = figure_font),
+      legend.background = element_blank(),
+      axis.line = element_line(),
+      axis.title.y = ggtext::element_markdown(),
+      axis.title.x = ggtext::element_markdown(),
+      plot.title = element_text(size = 11, family = figure_font, hjust = 0.5))
+)
+
+
+a <- ggplot(data = df, aes(x = a_obs, y = a_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Decision boundary\nseparation') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0.5, 2, by = 0.5), limits = c(0.5, 2)) +
+  scale_y_continuous(breaks = seq(0.5, 2, by = 0.5), limits = c(0.5, 2)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+v <- ggplot(data = df, aes(x = v_obs, y = v_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Drift rate\n') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 2, by = 1), limits = c(0, 2.1)) +
+  scale_y_continuous(breaks = seq(0, 2, by = 1), limits = c(0, 2.1)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+ter <- ggplot(data = df, aes(x = ter_obs, y = ter_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Non-decision time\n') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 0.5, by = 0.2), limits = c(0, 0.55)) +
+  scale_y_continuous(breaks = seq(0, 0.5, by = 0.2), limits = c(0, 0.55)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))  
+a2 <- ggplot(data = df, aes(x = a2_obs, y = a2_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Confidence boundary\nseparation') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 10, by = 2), limits = c(0, 10.1)) +
+  scale_y_continuous(breaks = seq(0, 10, by = 2), limits = c(0, 10.1)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+a2_slope_upper <- ggplot(data = df, aes(x = a2_slope_upper_obs, y = a2_slope_upper_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Upper confidence\nboundary slope') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 7, by = 1), limits = c(0, 7.1)) +
+  scale_y_continuous(breaks = seq(0, 7, by = 1), limits = c(0, 7.1)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+a2_slope_lower <- ggplot(data = df, aes(x = a2_slope_lower_obs, y = a2_slope_lower_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Lower confidence\nboundary slope') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 7, by = 1), limits = c(0, 7.1)) +
+  scale_y_continuous(breaks = seq(0, 7, by = 1), limits = c(0, 7.1)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11)) 
+starting_point_confidence <- ggplot(data = df, aes(x = starting_point_confidence_obs, y = starting_point_confidence_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Post-decision starting\npoint bias') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0.2, 0.8, by = 0.2), limits = c(0.15, 0.85)) +
+  scale_y_continuous(breaks = seq(0.2, 0.8, by = 0.2), limits = c(0.15, 0.85)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+vratio <- ggplot(data = df, aes(x = postdriftmod_obs, y = postdriftmod_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle(expression(atop(italic('v') * '-ratio'), paste(''))) +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(0, 5, by = 1), limits = c(0, 5)) +
+  scale_y_continuous(breaks = seq(0, 5, by = 1), limits = c(0, 5)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))
+ter2_1 <- ggplot(data = df, aes(x = ter2_1_obs, y = ter2_1_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Non-decision time\n(cj = 1)') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  scale_y_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11))  
+ter2_2 <- ggplot(data = df, aes(x = ter2_2_obs, y = ter2_2_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Non-decision time\n(cj = 2)') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  scale_y_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11)) 
+ter2_3 <- ggplot(data = df, aes(x = ter2_3_obs, y = ter2_3_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Non-decision time\n(cj = 3)') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  scale_y_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11)) 
+ter2_4 <- ggplot(data = df, aes(x = ter2_4_obs, y = ter2_4_pred)) +
+  geom_point(shape = 16, size = 2, alpha = 0.3) +
+  xlab('Observed') +
+  ylab('Simulated') + 
+  ggtitle('Non-decision time\n(cj = 4)') +
+  coord_fixed() +  
+  scale_x_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  scale_y_continuous(breaks = seq(-2, 2, by = 1), limits = c(-2.2, 2.2)) +
+  theme(plot.title = element_text(hjust = 0.5, size = 11)) 
+
+recovery_plots <- ggarrange(a, v, ter, vratio, starting_point_confidence, a2, a2_slope_upper, a2_slope_lower, ter2_1, ter2_2, ter2_3, ter2_4, ncol = 4, nrow = 3, align = "hv")
+
+
+ggsave('figures/ParamRecovery.png', recovery_plots, device = 'png', units = 'in', width = 7.5, height = 6.5, dpi = 1000)
+
+
+
 
